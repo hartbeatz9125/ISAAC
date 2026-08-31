@@ -1,0 +1,57 @@
+# Node / Electron dependencies and generated packages
+node_modules/
+release/
+dist/
+out/
+*.asar
+
+# Logs, diagnostics, and temporary files
+logs/
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+spotify-config.json
+spotify-auth.bin
+*oauth*.json
+*token*.json
+secrets/
+*.secret
+
+# Python environments and caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# ISAAC local runtime state
+isaac-core/runtime/
+isaac-core/data/
+isaac-core/indexes/
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+
+# IDE and machine-local state
+.idea/
+.vscode/
+*.user
+*.suo

@@ -1,0 +1,47 @@
+{
+  "name": "future-desktop-stage1b",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pixel-accurate dual-monitor visual calibration app",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "review": "electron . --review",
+    "package:portable": "electron-builder --win portable --x64"
+  },
+  "build": {
+    "appId": "local.stage1b.futuredesktop",
+    "productName": "Stage 1B Future Desktop",
+    "artifactName": "Stage-1B-Future-Desktop-Portable.exe",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "spotify-service.js",
+      "package.json",
+      "config/**/*",
+      "left-display/**/*",
+      "right-display/**/*",
+      "review/**/*",
+      "shared/**/*",
+      "effects/**/*",
+      "assets/left-games/**/*",
+      "assets/game-art/**/*",
+      "assets/masters/**/*"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": ["portable"]
+    },
+    "portable": {
+      "artifactName": "Stage-1B-Future-Desktop-Portable.exe"
+    }
+  },
+  "devDependencies": {
+    "electron": "^39.2.7",
+    "electron-builder": "^26.15.3"
+  }
+}

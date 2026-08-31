@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Left Display</title><link rel="stylesheet" href="../shared/display.css"><link rel="stylesheet" href="scene.css"><link rel="stylesheet" href="orbital.css"><link rel="stylesheet" href="readability.css"><link rel="stylesheet" href="approved-background.css"><link rel="stylesheet" href="theme-lighting.css"><link rel="stylesheet" href="spotify.css"></head>
+<body><div class="live-scene" aria-label="Layered cinematic gaming interface">
+<canvas class="atmosphere" aria-hidden="true"></canvas>
+<svg class="theme-lighting" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <defs>
+    <filter id="existing-light-luminance" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feColorMatrix type="matrix" values=".2126 .7152 .0722 0 0 .2126 .7152 .0722 0 0 .2126 .7152 .0722 0 0 0 0 0 1 0"/>
+      <feComponentTransfer><feFuncR type="gamma" amplitude="1" exponent="3.1" offset="0"/><feFuncG type="gamma" amplitude="1" exponent="3.1" offset="0"/><feFuncB type="gamma" amplitude="1" exponent="3.1" offset="0"/></feComponentTransfer>
+    </filter>
+    <mask id="existing-light-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1920" height="1080" mask-type="luminance">
+      <image href="../assets/masters/left-neutral-hangar.png" x="0" y="0" width="1920" height="1080" preserveAspectRatio="xMidYMid slice" filter="url(#existing-light-luminance)"/>
+    </mask>
+    <clipPath id="environment-light-zones" clipPathUnits="userSpaceOnUse">
+      <path d="M0 0H1920V205H0ZM0 0H330V655H0ZM1590 0H1920V655H1590ZM0 605H1920V1080H0Z"/>
+    </clipPath>
+  </defs>
+  <rect class="existing-light-color" x="0" y="0" width="1920" height="1080" mask="url(#existing-light-mask)" clip-path="url(#environment-light-zones)"/>
+  <rect class="existing-light-boost" x="0" y="0" width="1920" height="1080" mask="url(#existing-light-mask)" clip-path="url(#environment-light-zones)"/>
+  <rect class="existing-light-bloom" x="0" y="0" width="1920" height="1080" mask="url(#existing-light-mask)" clip-path="url(#environment-light-zones)"/>
+</svg>
+<canvas class="platform-motion" width="960" height="540" aria-hidden="true"></canvas>
+<div class="deep-geometry depth" data-depth=".08"><i></i><i></i><i></i></div>
+<div class="game-space depth" data-depth=".22">
+<article class="game-surface real-game card-a"><img alt=""><span class="glass-edge"></span><div class="featured-sheen"></div><div class="game-identity"><small></small><b></b></div></article>
+<article class="game-surface real-game card-b"><img alt=""><span class="glass-edge"></span><div class="featured-sheen"></div><div class="game-identity"><small></small><b></b></div></article>
+<article class="game-surface real-game card-c"><img alt=""><span class="glass-edge"></span><div class="featured-sheen"></div><div class="game-identity"><small></small><b></b></div></article>
+<article class="game-surface real-game card-d"><img alt=""><span class="glass-edge"></span><div class="featured-sheen"></div><div class="game-identity"><small></small><b></b></div></article></div>
+<div class="fragments depth" data-depth="1" aria-hidden="true"></div>
+<div class="launch-status" aria-live="polite"><small>LAUNCH SYSTEM</small><b>READY</b><span></span></div>
+<canvas class="fx" aria-hidden="true"></canvas>
+<section class="spotify-dock disconnected" aria-label="Spotify now playing">
+  <button class="spotify-art-action" type="button" aria-label="Open current content in Spotify"><img class="spotify-art" alt=""><span class="spotify-art-fallback">S</span></button>
+  <div class="spotify-copy">
+    <div class="spotify-heading"><small>SPOTIFY</small><span class="spotify-play-state"></span><button class="spotify-open" type="button">OPEN ↗</button></div>
+    <button class="spotify-connect" type="button">CONNECT SPOTIFY</button>
+    <div class="spotify-track" hidden><strong></strong><span class="spotify-artist"></span><em class="spotify-album"></em></div>
+    <div class="spotify-progress" hidden><time class="spotify-elapsed">0:00</time><i><b></b></i><time class="spotify-duration">0:00</time></div>
+    <p class="spotify-message">Connect to show your current Spotify track.</p>
+  </div>
+</section>
+<button class="theme-toggle" type="button" aria-expanded="false" aria-controls="theme-tester">THEME</button>
+<aside class="theme-tester" id="theme-tester" aria-label="Developer lighting tester">
+  <header><span>ENVIRONMENT LIGHTING</span><button type="button" class="theme-close" aria-label="Hide lighting tester">×</button></header>
+  <label>COLOR <input class="theme-picker" type="color" value="#65dcff"></label>
+  <label>INTENSITY <input class="theme-intensity" type="range" min="0" max="300" value="72"><output>72%</output></label>
+  <label>LIGHT MOTION <input class="theme-motion" type="checkbox" checked><output class="motion-state">ON</output></label>
+  <label>MOTION SPEED <input class="theme-speed" type="range" min="0" max="100" value="28"><output class="speed-state">28</output></label>
+  <div class="theme-presets">
+    <button type="button" data-color="#8eeaff">ICE BLUE</button><button type="button" data-color="#195cff">DEEP BLUE</button><button type="button" data-color="#7b3cff">VIOLET</button>
+    <button type="button" data-color="#ff2bd6">MAGENTA</button><button type="button" data-color="#ff3038">RED</button><button type="button" data-color="#ff851b">ORANGE</button>
+    <button type="button" data-color="#39e66d">GREEN</button><button type="button" data-color="#21dec8">TEAL</button><button type="button" data-color="#ffffff">WHITE</button>
+  </div><small>PRESS T TO SHOW / HIDE</small>
+</aside>
+</div><img class="reference-only" src="../assets/masters/left-approved-master.png" alt="Developer alignment reference"><div class="compare-label">REFERENCE COMPARISON // \\ TO EXIT</div><script src="../config/game-overrides.js"></script><script src="catalog.js"></script><script src="theme-lighting.js"></script><script src="platform-motion.js"></script><script src="spotify.js"></script><script src="../effects/left/motion.js"></script></body></html>

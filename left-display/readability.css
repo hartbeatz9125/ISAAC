@@ -1,0 +1,14 @@
+/* Selective exposure pass: retain black atmosphere while lifting peripheral detail. */
+.live-scene{background:radial-gradient(ellipse at 51% 48%,#0e3045 0,#04131e 39%,#01070c 74%,#000204 100%)}
+.deep-geometry{opacity:.3;filter:brightness(1.22)}
+.glass-edge{border-color:rgba(111,228,255,.96);box-shadow:inset 0 0 22px rgba(58,204,247,.19),0 0 15px rgba(38,203,255,.38)}
+.game-surface.carousel-featured .glass-edge{border-color:#b7f3ff;box-shadow:inset 0 0 26px rgba(75,218,255,.2),0 0 21px rgba(48,211,255,.48)}
+.real-game:not(.carousel-featured) .game-identity{opacity:.68}.game-identity{background:linear-gradient(transparent,rgba(0,7,12,.74) 78%)}
+.fragment{opacity:.5!important;filter:brightness(1.28) drop-shadow(0 0 7px #47d7ff)}
+.hud{filter:brightness(1.18) contrast(1.07);text-shadow:0 0 8px rgba(46,207,255,.62)}
+.hud small{color:#45d9ff}.now-playing span{color:#83afbe}.now-playing em{color:#29a8cd}
+.performance p{color:#80afbf}.performance p i{border-color:#45dcff;filter:drop-shadow(0 0 3px #29cfff)}
+.friends p,.downloads,.achievement,.total{filter:brightness(1.12)}
+.friends p{border-top-color:rgba(73,216,255,.42)}.downloads>i{box-shadow:0 0 5px rgba(40,207,255,.42)}
+.achievement{border-left-color:rgba(86,222,255,.62)}.achievement>i{box-shadow:0 0 11px rgba(40,207,255,.3)}
+.game-space:after{border-color:rgba(70,218,255,.2);box-shadow:0 0 64px rgba(34,180,226,.13),inset 0 0 75px rgba(48,203,244,.07)}

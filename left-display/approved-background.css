@@ -1,0 +1,14 @@
+/* Approved neutral master background. Keep this layer unfiltered for future themes. */
+.live-scene::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: url("../assets/masters/left-neutral-hangar.png") center center / cover no-repeat;
+  pointer-events: none;
+}
+
+/* The approved master replaces only the old generated atmosphere backdrop. */
+.atmosphere {
+  display: none;
+}
