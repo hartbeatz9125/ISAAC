@@ -21,6 +21,10 @@
       "main.js",
       "preload.js",
       "spotify-service.js",
+      "home-core/**/*",
+      "isaac-core/**/*",
+      "contracts/**/*",
+      "docs/**/*",
       "package.json",
       "config/**/*",
       "left-display/**/*",
@@ -31,6 +35,9 @@
       "assets/left-games/**/*",
       "assets/game-art/**/*",
       "assets/masters/**/*"
+    ],
+    "asarUnpack": [
+      "isaac-core/**/*"
     ],
     "win": {
       "icon": "build/icon.ico",

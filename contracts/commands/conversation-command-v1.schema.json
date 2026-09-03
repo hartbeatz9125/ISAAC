@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://isaac.local/contracts/commands/conversation-command-v1.schema.json",
+  "title": "ISAAC Home to Core command v1",
+  "type": "object",
+  "required": ["type", "requestId", "version", "payload"],
+  "properties": {
+    "type": {
+      "enum": [
+        "conversation.create", "conversation.message", "conversation.cancel", "brain.status",
+        "memory.status", "memory.list", "memory.search", "memory.get", "memory.create", "memory.update", "memory.delete"
+      ]
+    },
+    "requestId": { "type": "string", "format": "uuid" },
+    "version": { "const": 1 },
+    "payload": { "type": "object" }
+  },
+  "additionalProperties": false
+}

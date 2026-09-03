@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://isaac.local/contracts/events/isaac-events-v1.schema.json",
+  "title": "ISAAC Event Types v1",
+  "oneOf": [
+    {
+      "allOf": [
+        { "$ref": "event-envelope-v1.schema.json" },
+        { "properties": { "type": { "const": "isaac.ready" } } }
+      ]
+    },
+    {
+      "allOf": [
+        { "$ref": "event-envelope-v1.schema.json" },
+        {
+          "properties": {
+            "type": { "const": "isaac.error" },
+            "payload": {
+              "type": "object",
+              "required": ["code", "message"],
+              "properties": {
+                "code": { "type": "string" },
+                "message": { "type": "string" },
+                "recoverable": { "type": "boolean" }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "allOf": [
+        { "$ref": "event-envelope-v1.schema.json" },
+        {
+          "properties": {
+            "type": {
+              "enum": [
+                "isaac.brain.ready",
+                "isaac.command.result",
+                "isaac.thinking",
+                "isaac.response.started",
+                "isaac.response.delta",
+                "isaac.response.completed",
+                "isaac.response.cancelled",
+                "isaac.grounding.validation",
+                "isaac.tool.started",
+                "isaac.tool.completed",
+                "isaac.memory.created",
+                "isaac.memory.updated",
+                "isaac.memory.deleted",
+                "isaac.memory.recalled",
+                "isaac.memory.consolidated",
+                "isaac.memory.error",
+                "isaac.voice.started",
+                "isaac.voice.stopped",
+                "isaac.voice.error"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

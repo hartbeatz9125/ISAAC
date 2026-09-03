@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ISAAC Phase 2 Test</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><span>ISAAC // LOCAL TEST</span><div><button id="voice-toggle" type="button">Voice ON</button><button id="voice-stop" type="button">Stop Speaking</button><button id="memories" type="button">Memories</button><output id="status">CONNECTING</output></div></header>
+  <main id="messages" aria-live="polite"></main>
+  <section id="memory-panel" hidden>
+    <div class="memory-toolbar">
+      <input id="memory-query" placeholder="Search memory">
+      <button id="memory-search" type="button">Search</button>
+      <button id="memory-refresh" type="button">All</button>
+      <button id="memory-close" type="button">Close</button>
+    </div>
+    <div id="memory-list"></div>
+  </section>
+  <form id="composer">
+    <textarea id="input" rows="3" placeholder="Temporary session message…" required></textarea>
+    <div><button id="cancel" type="button">Cancel</button><button id="send" type="submit">Send</button></div>
+  </form>
+  <script src="renderer.js"></script>
+</body>
+</html>

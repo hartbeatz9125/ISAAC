@@ -1,0 +1,62 @@
+openapi: 3.1.0
+info:
+  title: ISAAC Core Local API
+  version: 1.0.0
+servers:
+  - url: http://127.0.0.1:17777
+security:
+  - bearerAuth: []
+paths:
+  /v1/health:
+    get:
+      operationId: getHealth
+      responses:
+        "200":
+          description: Core health and protocol compatibility
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "401":
+          description: Missing or invalid local authentication
+  /v1/capabilities:
+    get:
+      operationId: getCapabilities
+      responses:
+        "200":
+          description: Enabled Core capabilities
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [protocolVersion, capabilities]
+                properties:
+                  protocolVersion: { type: integer, const: 1 }
+                  capabilities:
+                    type: array
+                    items: { type: string }
+  /v1/system/shutdown:
+    post:
+      operationId: shutdownManagedCore
+      responses:
+        "202": { description: Graceful shutdown accepted }
+  /v1/events:
+    get:
+      description: WebSocket upgrade endpoint. Electron main authenticates with an ephemeral access_token. It receives versioned events and may send versioned conversation commands; renderers never receive this credential.
+      responses:
+        "101": { description: WebSocket event stream established }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    Health:
+      type: object
+      required: [status, service, protocolVersion, coreVersion, pid]
+      properties:
+        status: { const: healthy }
+        service: { const: isaac-core }
+        protocolVersion: { type: integer, const: 1 }
+        coreVersion: { type: string }
+        pid: { type: integer }

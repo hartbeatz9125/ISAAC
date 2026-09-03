@@ -1,0 +1,29 @@
+:root{color-scheme:dark;font-family:"Segoe UI",Arial,sans-serif;color:#d8f4ff}
+.bay-master{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;object-position:center;background:#000;transform:scale(1.06) translateX(-6%);user-select:none;-webkit-user-drag:none;pointer-events:none}
+.reactor-presence{position:absolute;inset:0 0 13% 0;z-index:.5;overflow:hidden;transform:translate(7%,-78px);pointer-events:none;-webkit-mask-image:radial-gradient(ellipse 31% 72% at 50% 45%,#000 0 62%,rgba(0,0,0,.98) 72%,rgba(0,0,0,.42) 87%,transparent 100%),linear-gradient(to bottom,#000 0 86%,transparent 100%);-webkit-mask-composite:source-in;mask-image:radial-gradient(ellipse 31% 72% at 50% 45%,#000 0 62%,rgba(0,0,0,.98) 72%,rgba(0,0,0,.42) 87%,transparent 100%),linear-gradient(to bottom,#000 0 86%,transparent 100%);mask-composite:intersect}
+.reactor-presence img{position:absolute;inset:0;z-index:1;width:100%;height:calc(100% / .87);object-fit:contain;object-position:center top;filter:drop-shadow(0 35px 42px rgba(0,0,0,.86));user-select:none;-webkit-user-drag:none}
+.reactor-presence::before{content:"";position:absolute;inset:0;z-index:2;height:calc(100% / .87);background:url("../assets/masters/right-approved-master.png") center top/100% auto no-repeat;filter:grayscale(1) contrast(2.2) brightness(1.35);mix-blend-mode:screen;opacity:.68}
+.reactor-presence::after{content:"";position:absolute;left:31%;right:27%;bottom:-2%;height:28%;background:radial-gradient(ellipse at 50% 100%,rgba(80,209,255,.17),rgba(17,89,118,.07) 45%,transparent 72%);mix-blend-mode:screen}
+.fx{transform:translate(7%,-78px)}
+.isaac-interface{position:absolute;inset:0;z-index:2;pointer-events:none}
+.conversation-shell{position:absolute;left:3.4%;top:15%;bottom:18%;width:24%;min-width:340px;max-width:480px;display:flex;flex-direction:column;padding:18px 34px 20px 18px;background:radial-gradient(ellipse at 10% 48%,rgba(0,4,8,.46),rgba(0,5,10,.22) 58%,transparent 82%);pointer-events:auto}
+.conversation-heading{display:flex;align-items:center;gap:14px;margin-bottom:22px;padding-bottom:3px;letter-spacing:.18em}
+.identity{font-size:14px;color:#9ee9ff;text-shadow:0 0 10px rgba(57,207,255,.45)}
+.state-label{font-size:10px;color:rgba(146,221,244,.62)}
+.state-label::before{content:"";display:inline-block;width:5px;height:5px;margin-right:7px;border-radius:50%;background:#55d8ff;box-shadow:0 0 8px #29cbff;vertical-align:1px}
+.conversation{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:2px 16px 24px 0;scrollbar-width:thin;scrollbar-color:rgba(78,211,255,.25) transparent;mask-image:linear-gradient(to bottom,transparent 0,#000 6%,#000 94%,transparent 100%)}
+.conversation::-webkit-scrollbar{width:3px}.conversation::-webkit-scrollbar-thumb{background:rgba(78,211,255,.25)}
+.message{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.45;transition:opacity .25s ease;color:rgba(206,239,249,.82)}
+.message+.message{margin-top:20px}
+.message.kenneth{margin-left:26px;padding-left:10px;border-left:1px solid rgba(100,210,242,.25);font-size:13px;color:rgba(180,219,232,.62)}
+.message.isaac{font-size:16px;letter-spacing:.012em;color:rgba(225,248,255,.94);text-shadow:0 0 13px rgba(72,194,232,.12)}
+.message.isaac::before{content:"ISAAC / ";font-size:9px;letter-spacing:.2em;color:rgba(77,212,255,.62)}
+.message:nth-last-child(n+7){opacity:.35}.message:nth-last-child(6){opacity:.48}.message:nth-last-child(5){opacity:.6}
+.composer{position:absolute;left:24%;right:18%;bottom:4.2%;min-height:48px;display:flex;align-items:flex-end;gap:13px;padding:7px 10px 7px;background:linear-gradient(90deg,transparent,rgba(0,8,13,.32) 13%,rgba(0,8,13,.22) 82%,transparent);border-bottom:1px solid transparent;border-image:linear-gradient(90deg,transparent,rgba(98,222,255,.38) 18%,rgba(98,222,255,.22) 80%,transparent) 1;pointer-events:auto}
+.prompt-mark{width:7px;height:7px;margin-bottom:12px;flex:none;transform:rotate(45deg);border:1px solid rgba(103,226,255,.78);box-shadow:0 0 8px rgba(45,203,247,.5)}
+#input{flex:1;min-height:30px;max-height:126px;resize:none;overflow-y:auto;border:0;outline:0;background:transparent;color:#e3f8ff;font:15px/1.45 "Segoe UI",Arial,sans-serif;caret-color:#65dcff;padding:5px 0}
+#input::placeholder{color:rgba(148,210,229,.36);letter-spacing:.08em}
+.input-status{flex:none;margin-bottom:8px;font-size:8px;letter-spacing:.18em;color:rgba(123,206,231,.38)}
+body[data-isaac-state="thinking"] .state-label,body[data-isaac-state="speaking"] .state-label{color:rgba(172,239,255,.9)}
+body[data-isaac-state="speaking"] .state-label::before{background:#d9fbff;box-shadow:0 0 13px #42dcff}
+@media(max-width:1300px){.conversation-shell{width:28%;min-width:300px}.composer{left:27%;right:10%}}

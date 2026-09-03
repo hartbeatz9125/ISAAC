@@ -1,1 +1,36 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Right Display</title><link rel="stylesheet" href="../shared/display.css"></head><body><img class="master" src="../assets/masters/right-approved-master.png" alt="Approved futuristic reactor interface"><canvas class="fx" aria-hidden="true"></canvas><script src="../effects/right/motion.js"></script></body></html>
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ISAAC</title>
+  <link rel="stylesheet" href="../shared/display.css">
+  <link rel="stylesheet" href="interface.css">
+</head>
+<body data-isaac-state="idle">
+  <img class="bay-master" src="../assets/masters/right-reactor-bay-v1.png" alt="ISAAC reactor bay">
+  <div class="reactor-presence" aria-hidden="true">
+    <img src="../assets/masters/right-approved-master.png" alt="">
+  </div>
+  <canvas class="fx" aria-hidden="true"></canvas>
+
+  <main class="isaac-interface" aria-label="ISAAC conversation">
+    <section class="conversation-shell" aria-label="Conversation history">
+      <header class="conversation-heading">
+        <span class="identity">ISAAC</span>
+        <span id="state-label" class="state-label">CONNECTING</span>
+      </header>
+      <div id="conversation" class="conversation" role="log" aria-live="polite" aria-relevant="additions text"></div>
+    </section>
+
+    <form id="composer" class="composer" autocomplete="off">
+      <span class="prompt-mark" aria-hidden="true"></span>
+      <textarea id="input" rows="1" maxlength="8000" aria-label="Message ISAAC" placeholder="Talk to ISAAC"></textarea>
+      <span id="input-status" class="input-status">ENTER TO SEND</span>
+    </form>
+  </main>
+
+  <script src="../effects/right/motion.js"></script>
+  <script src="interface.js"></script>
+</body>
+</html>
