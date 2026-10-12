@@ -243,6 +243,11 @@ app.whenReady().then(() => {
   ipcMain.handle('spotify:disconnect', () => spotifyService.disconnect());
   ipcMain.handle('spotify:open-current', (_event, destination) => spotifyService.openCurrent(destination));
   ipcMain.handle('isaac:conversation:create', () => coreSupervisor?.client.command('conversation.create'));
+  ipcMain.handle('isaac:conversation:bootstrap', () => coreSupervisor?.client.command('conversation.bootstrap'));
+  ipcMain.handle('isaac:conversation:list', () => coreSupervisor?.client.command('conversation.list'));
+  ipcMain.handle('isaac:conversation:select', (_event, payload) => coreSupervisor?.client.command('conversation.select', payload));
+  ipcMain.handle('isaac:conversation:rename', (_event, payload) => coreSupervisor?.client.command('conversation.rename', payload));
+  ipcMain.handle('isaac:conversation:delete', (_event, payload) => coreSupervisor?.client.command('conversation.delete', payload));
   ipcMain.handle('isaac:conversation:message', (_event, payload) => {
     voiceOutput?.stop('interrupted');
     return coreSupervisor?.client.command('conversation.message', payload);

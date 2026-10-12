@@ -10,6 +10,8 @@ from uuid import uuid4
 
 from isaac_core.brain.adapters.llama_cpp import BrainUnavailableError, GenerationCancelled
 from isaac_core.brain.base import BrainAdapter
+from isaac_core.conversations.repository import ConversationRepository
+from isaac_core.dev import DevModeService
 from isaac_core.grounding import GroundingEvidence, GroundingValidator, ValidationResult
 from isaac_core.memory.consolidation import MemoryConsolidator, should_analyze
 from isaac_core.memory.service import MemoryService
@@ -29,6 +31,10 @@ class Conversation:
     active_task: asyncio.Task | None = None
     cancel_event: asyncio.Event | None = None
     last_memory_id: str | None = None
+    pending_dev_proposal_id: str | None = None
+    pending_dev_revision: int | None = None
+    pending_dev_manifest_hash: str | None = None
+    pending_dev_plain_approval_allowed: bool = False
 
 
 @dataclass(frozen=True)
@@ -95,7 +101,7 @@ class LiveGroundedStream:
 
 
 class ConversationService:
-    def __init__(self, brain: BrainAdapter, identity: str, emit: EventCallback, memory: MemoryService | None = None, available_sensors: set[str] | None = None, web: WebResearchService | None = None) -> None:
+    def __init__(self, brain: BrainAdapter, identity: str, emit: EventCallback, memory: MemoryService | None = None, available_sensors: set[str] | None = None, web: WebResearchService | None = None, repository: ConversationRepository | None = None, dev: DevModeService | None = None) -> None:
         self.brain = brain
         self.identity = identity
         self.emit = emit
@@ -113,21 +119,78 @@ class ConversationService:
         self.grounding = GroundingValidator(brain)
         self.available_sensors = frozenset(available_sensors or ())
         self.web = web
+        self.repository = repository
+        self.dev = dev
         self.conversations: dict[str, Conversation] = {}
 
-    def create(self) -> dict[str, str]:
-        conversation_id = str(uuid4())
+    def _system_message(self) -> dict[str, str]:
+        return {"role": "system", "content": self.identity + "\n\n" + WEB_INSTRUCTION}
+
+    def create(self) -> dict[str, object]:
+        record = self.repository.create() if self.repository else {"conversationId": str(uuid4()), "title": "New Chat", "messages": []}
+        conversation_id = str(record["conversationId"])
         self.conversations[conversation_id] = Conversation(
             id=conversation_id,
-            messages=[{"role": "system", "content": self.identity + "\n\n" + WEB_INSTRUCTION}],
+            messages=[self._system_message()],
         )
-        return {"conversationId": conversation_id}
+        return record
+
+    def bootstrap(self) -> dict[str, object]:
+        if not self.repository:
+            return self.create()
+        record = self.repository.latest()
+        if not record:
+            return self.create()
+        self._load(str(record["conversationId"]), record)
+        return record
+
+    def list(self) -> dict[str, object]:
+        return {"conversations": self.repository.list() if self.repository else []}
+
+    def select(self, conversation_id: str) -> dict[str, object]:
+        if not self.repository:
+            conversation = self._get(conversation_id)
+            return {"conversationId": conversation.id, "title": "New Chat", "messages": conversation.messages[1:]}
+        self.repository.touch(conversation_id)
+        self._load(conversation_id)
+        return self.repository.get(conversation_id)
+
+    def rename(self, conversation_id: str, title: str) -> dict[str, object]:
+        if not self.repository:
+            raise RuntimeError("Persistent conversations are unavailable")
+        return self.repository.rename(conversation_id, title)
+
+    def delete(self, conversation_id: str) -> dict[str, object]:
+        conversation = self.conversations.get(conversation_id)
+        if conversation and conversation.active_task and not conversation.active_task.done():
+            raise ValueError("Cancel the active response before deleting this chat")
+        if not self.repository:
+            raise RuntimeError("Persistent conversations are unavailable")
+        self.repository.delete(conversation_id)
+        self.conversations.pop(conversation_id, None)
+        return self.bootstrap()
+
+    def _load(self, conversation_id: str, record: dict[str, object] | None = None) -> Conversation:
+        if conversation_id in self.conversations:
+            return self.conversations[conversation_id]
+        if not self.repository:
+            raise ValueError("Conversation not found")
+        record = record or self.repository.get(conversation_id)
+        conversation = Conversation(
+            id=conversation_id,
+            messages=[self._system_message()] + [
+                {"role": str(item["role"]), "content": str(item["content"])}
+                for item in record.get("messages", [])
+            ],
+        )
+        self.conversations[conversation_id] = conversation
+        return conversation
 
     def _get(self, conversation_id: str) -> Conversation:
-        conversation = self.conversations.get(conversation_id)
-        if not conversation:
-            raise ValueError("Conversation not found")
-        return conversation
+        try:
+            return self._load(conversation_id)
+        except KeyError as error:
+            raise ValueError("Conversation not found") from error
 
     async def send(self, conversation_id: str, content: str) -> dict[str, str]:
         received_at = time.perf_counter()
@@ -139,6 +202,8 @@ class ConversationService:
         if conversation.active_task and not conversation.active_task.done():
             raise ValueError("A response is already in progress")
         normalized = content.strip()
+        if conversation.pending_dev_proposal_id and not self._is_explicit_dev_approval(normalized) and not self._is_plain_approval(normalized):
+            conversation.pending_dev_plain_approval_allowed = False
         direct_memory_command = bool(self.memory and self.memory.directive(normalized))
         consolidation_wait_ms = 0.0
         if direct_memory_command:
@@ -152,8 +217,25 @@ class ConversationService:
                 self._interrupt_consolidation()
             request_id = str(uuid4())
             conversation.messages.append({"role": "user", "content": normalized})
+            if self.repository:
+                self.repository.append(conversation.id, "user", normalized)
+                metadata = self.repository.get(conversation.id)
+                if metadata["title"] == "New Chat":
+                    title = re.sub(r"\s+", " ", normalized).strip()
+                    self.repository.rename(conversation.id, title[:57] + ("…" if len(title) > 57 else ""))
             conversation.active_request_id = request_id
             conversation.cancel_event = asyncio.Event()
+            if self.dev and self._dev_action(conversation, normalized):
+                if self.brain.status().get("state") != "ready" and not self._is_dev_undo(normalized):
+                    conversation.messages.pop()
+                    if self.repository:
+                        self.repository.pop_last(conversation.id, "user")
+                    conversation.active_request_id = None
+                    conversation.cancel_event = None
+                    raise BrainUnavailableError("The local model is not loaded")
+                conversation.active_task = asyncio.create_task(self._handle_dev(conversation, request_id, normalized))
+                foreground_transferred = True
+                return {"conversationId": conversation_id, "requestId": request_id}
             if self.memory:
                 handled, response, record = await self.memory.handle_directive(normalized, conversation.last_memory_id)
                 if handled:
@@ -164,6 +246,8 @@ class ConversationService:
                     return {"conversationId": conversation_id, "requestId": request_id}
             if self.brain.status().get("state") != "ready":
                 conversation.messages.pop()
+                if self.repository:
+                    self.repository.pop_last(conversation.id, "user")
                 conversation.active_request_id = None
                 conversation.cancel_event = None
                 raise BrainUnavailableError("The local model is not loaded")
@@ -176,6 +260,108 @@ class ConversationService:
             if not foreground_transferred:
                 self._end_foreground()
 
+    @staticmethod
+    def _is_dev_undo(message: str) -> bool:
+        return bool(re.search(r"\bundo\s+(?:your\s+)?last\s+(?:code\s+)?change\b", message, re.I))
+
+    @staticmethod
+    def _is_plain_approval(message: str) -> bool:
+        return bool(re.fullmatch(r"\s*(?:yes|yeah|yep|approve|approved|go ahead|do it)[.!]?\s*", message, re.I))
+
+    @staticmethod
+    def _is_explicit_dev_approval(message: str) -> bool:
+        return bool(re.search(r"\bapprove\s+(?:proposal\s+)?[0-9a-f-]{36}\b", message, re.I))
+
+    @staticmethod
+    def _is_read_only_dev_plan(message: str) -> bool:
+        return bool(
+            re.search(r"\b(?:inspect|review|analyze|examine)\b", message, re.I)
+            and re.search(r"\b(?:architecture|plan|how\s+(?:you\s+)?would\s+build|tell\s+me\s+how)\b", message, re.I)
+            and re.search(r"\b(?:do\s+not|don'?t)\s+(?:modify|change|edit|implement)|\bno\s+(?:file\s+)?changes\b", message, re.I)
+        )
+
+    @classmethod
+    def _dev_action(cls, conversation: Conversation, message: str) -> bool:
+        if cls._is_dev_undo(message) or cls._is_read_only_dev_plan(message) or cls._is_explicit_dev_approval(message):
+            return True
+        if re.search(r"\b(?:show|display|view)\s+(?:me\s+)?(?:the\s+)?(?:git\s+)?diff\b", message, re.I):
+            return True
+        if conversation.pending_dev_proposal_id and cls._is_plain_approval(message):
+            return True
+        return bool(
+            re.search(r"\b(?:add|build|change|create|edit|fix|implement|modify|refactor|remove|update)\b", message, re.I)
+            and re.search(r"\b(?:app|code|component|css|file|function|interface|page|project|screen|source|test|ui)\b", message, re.I)
+        )
+
+    async def _handle_dev(self, conversation: Conversation, request_id: str, message: str) -> None:
+        try:
+            cancel_event = conversation.cancel_event or asyncio.Event()
+            if self._is_read_only_dev_plan(message):
+                await self.emit("isaac.tool.started", {"requestId": request_id, "tool": "dev.inspect", "status": "Inspecting project"}, conversation.id, request_id)
+                response = await self.dev.draft_read_only_plan(self.brain, message, request_id, cancel_event)
+                await self.emit("isaac.tool.completed", {"requestId": request_id, "tool": "dev.inspect", "ok": True}, conversation.id, request_id)
+                await self._respond_directly(conversation, request_id, response, "dev_read_only_plan")
+                return
+            if re.search(r"\b(?:show|display|view)\s+(?:me\s+)?(?:the\s+)?(?:git\s+)?diff\b", message, re.I):
+                result = self.dev.git_diff()
+                content = result.get("stdout", "").strip() or "There is no current Git diff to show."
+                await self._respond_directly(conversation, request_id, content[:8000], "dev_diff")
+                return
+            if self._is_dev_undo(message):
+                await self.emit("isaac.tool.started", {"requestId": request_id, "tool": "dev.rollback_last_change", "status": "Applying rollback"}, conversation.id, request_id)
+                result = self.dev.rollback_last_change()
+                await self.emit("isaac.tool.completed", {"requestId": request_id, "tool": "dev.rollback_last_change", "ok": True}, conversation.id, request_id)
+                response = "Done. I restored the files from my most recent managed code change: " + ", ".join(result["files"]) + "."
+                await self._respond_directly(conversation, request_id, response, "dev_mode")
+                return
+            approval_match = re.search(r"\bapprove\s+(?:proposal\s+)?([0-9a-f-]{36})\b", message, re.I)
+            plain_approval = self._is_plain_approval(message)
+            if approval_match or (plain_approval and conversation.pending_dev_proposal_id):
+                proposal_id = approval_match.group(1).lower() if approval_match else conversation.pending_dev_proposal_id
+                if conversation.pending_dev_proposal_id != proposal_id:
+                    raise PermissionError("That is not the active proposal for this conversation")
+                if plain_approval and not conversation.pending_dev_plain_approval_allowed:
+                    raise PermissionError("Plain approval expired after other conversation. Approve the proposal by ID instead")
+                await self.emit("isaac.tool.started", {"requestId": request_id, "tool": "dev.apply", "proposalId": proposal_id, "status": "Applying approved changes"}, conversation.id, request_id)
+                result = await self.dev.execute_proposal(
+                    self.brain, proposal_id, request_id, cancel_event,
+                    expected_revision=conversation.pending_dev_revision,
+                    expected_manifest_hash=conversation.pending_dev_manifest_hash,
+                )
+                conversation.pending_dev_proposal_id = None
+                conversation.pending_dev_revision = None
+                conversation.pending_dev_manifest_hash = None
+                conversation.pending_dev_plain_approval_allowed = False
+                await self.emit("isaac.tool.completed", {"requestId": request_id, "tool": "dev.apply", "proposalId": proposal_id, "ok": result["success"]}, conversation.id, request_id)
+                checks = result.get("checks", [])
+                check_text = "; ".join(f"{item['check']}: exit {item['exitCode']}" for item in checks) or "No checks were declared"
+                files = ", ".join(result.get("filesModified", [])) or "the approved files"
+                response = (
+                    f"Applied the approved change to {files}. Checks passed: {check_text}."
+                    if result["success"]
+                    else f"I applied the approved change to {files}, but validation failed: {check_text}."
+                )
+                await self._respond_directly(conversation, request_id, response, "dev_mode")
+                return
+            await self.emit("isaac.tool.started", {"requestId": request_id, "tool": "dev.inspect", "status": "Inspecting project"}, conversation.id, request_id)
+            proposal = await self.dev.draft_proposal(self.brain, message, request_id, cancel_event)
+            conversation.pending_dev_proposal_id = proposal["proposalId"]
+            conversation.pending_dev_revision = proposal["revision"]
+            conversation.pending_dev_manifest_hash = proposal["manifestHash"]
+            conversation.pending_dev_plain_approval_allowed = True
+            await self.emit("isaac.tool.completed", {"requestId": request_id, "tool": "dev.inspect", "proposalId": proposal["proposalId"], "ok": True}, conversation.id, request_id)
+            response = self.dev.render_proposal(proposal)
+            await self._respond_directly(conversation, request_id, response, "dev_proposal")
+        except GenerationCancelled:
+            await self.emit("isaac.response.cancelled", {"requestId": request_id}, conversation.id, request_id)
+            conversation.active_request_id = None
+            conversation.active_task = None
+            conversation.cancel_event = None
+            self._end_foreground()
+        except Exception as error:
+            await self.emit("isaac.tool.completed", {"requestId": request_id, "tool": "dev.mode", "ok": False, "error": type(error).__name__}, conversation.id, request_id)
+            await self._respond_directly(conversation, request_id, f"I couldn't complete that Dev Mode step safely: {error}", "dev_mode_error")
+
     async def _respond_directly(self, conversation: Conversation, request_id: str, response: str, source: str = "memory_policy") -> None:
         try:
             await self.emit("isaac.response.started", {"requestId": request_id}, conversation.id, request_id)
@@ -184,6 +370,8 @@ class ConversationService:
                 await self.emit("isaac.response.delta", {"requestId": request_id, "delta": delta}, conversation.id, request_id)
                 await asyncio.sleep(0)
             conversation.messages.append({"role": "assistant", "content": response})
+            if self.repository:
+                self.repository.append(conversation.id, "assistant", response)
             await self.emit(
                 "isaac.response.completed",
                 {"requestId": request_id, "content": response, "timings": {}, "source": source},
@@ -385,6 +573,8 @@ class ConversationService:
                 await emit_approved("I don't have a grounded response for that yet.")
             response_text = "".join(delivered_parts)
             conversation.messages.append({"role": "assistant", "content": response_text})
+            if self.repository:
+                self.repository.append(conversation.id, "assistant", response_text)
             completion_timings = dict(result.get("timings", {}))
             completion_timings["grounding"] = grounding_timings
             completion_timings["pipeline"] = {
@@ -412,6 +602,11 @@ class ConversationService:
                 research_performed=research_bundle is not None,
             )
         except GenerationCancelled:
+            partial_response = "".join(delivered_parts) if "delivered_parts" in locals() else ""
+            if partial_response:
+                conversation.messages.append({"role": "assistant", "content": partial_response})
+                if self.repository:
+                    self.repository.append(conversation.id, "assistant", partial_response)
             await self.emit("isaac.response.cancelled", {"requestId": request_id}, conversation.id, request_id)
         except Exception as error:
             await self.emit(

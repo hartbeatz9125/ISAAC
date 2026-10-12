@@ -4,6 +4,8 @@ import asyncio
 from datetime import datetime, timezone
 import hmac
 import json
+import os
+from pathlib import Path
 from http import HTTPStatus
 from urllib.parse import parse_qs, urlsplit
 
@@ -14,7 +16,9 @@ from isaac_core import PROTOCOL_VERSION, __version__
 from isaac_core.api.health import CAPABILITIES, capabilities_payload, health_payload
 from isaac_core.brain.service import create_brain
 from isaac_core.conversations.service import ConversationService
+from isaac_core.conversations.repository import ConversationRepository
 from isaac_core.events.broker import EventBroker
+from isaac_core.dev import DevModeService
 from isaac_core.identity import load_identity
 from isaac_core.memory.service import MemoryService
 from isaac_core.web import WebResearchService
@@ -28,8 +32,13 @@ class CoreApplication:
         self.broker = EventBroker()
         self.brain = create_brain()
         self.memory = MemoryService.open(self._emit_memory)
+        database_path = self.memory.repository.database_path if self.memory.repository else None
+        self.conversation_repository = ConversationRepository(database_path) if database_path else None
         self.web = WebResearchService()
-        self.conversations = ConversationService(self.brain, load_identity(), self._emit, self.memory, web=self.web)
+        project_root = Path(__file__).resolve().parents[4]
+        local_state = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "ISAAC" / "Core" / "dev-mode"
+        self.dev = DevModeService(project_root, local_state)
+        self.conversations = ConversationService(self.brain, load_identity(), self._emit, self.memory, web=self.web, repository=self.conversation_repository, dev=self.dev)
         self.brain_start_task: asyncio.Task | None = None
 
     async def _emit(
@@ -61,6 +70,8 @@ class CoreApplication:
             self.brain_start_task.cancel()
             await asyncio.gather(self.brain_start_task, return_exceptions=True)
         await self.brain.stop()
+        if self.conversation_repository:
+            self.conversation_repository.close()
         self.memory.close()
 
     def _authorized(self, supplied: str | None) -> bool:
@@ -151,10 +162,42 @@ class CoreApplication:
                 raise ValueError("Command type and requestId are required")
             if command_type == "conversation.create":
                 result = self.conversations.create()
+            elif command_type == "conversation.bootstrap":
+                result = self.conversations.bootstrap()
+            elif command_type == "conversation.list":
+                result = self.conversations.list()
+            elif command_type == "conversation.select":
+                result = self.conversations.select(payload.get("conversationId", ""))
+            elif command_type == "conversation.rename":
+                result = self.conversations.rename(payload.get("conversationId", ""), payload.get("title", ""))
+            elif command_type == "conversation.delete":
+                result = self.conversations.delete(payload.get("conversationId", ""))
             elif command_type == "conversation.message":
                 result = await self.conversations.send(payload.get("conversationId", ""), payload.get("content", ""))
             elif command_type == "conversation.cancel":
                 result = await self.conversations.cancel(payload.get("conversationId", ""))
+            elif command_type == "dev.list_files":
+                result = self.dev.list_files(payload.get("path", "."), payload.get("depth", 3), payload.get("pattern"))
+            elif command_type == "dev.read_file":
+                result = self.dev.read_file(payload.get("path", ""), payload.get("startLine", 1), payload.get("maxLines", 400))
+            elif command_type == "dev.search_code":
+                result = self.dev.search_code(payload.get("query", ""), payload.get("pattern"), payload.get("limit", 100))
+            elif command_type == "dev.propose_change":
+                result = self.dev.propose_change(payload.get("userRequest", ""), payload.get("files", []), payload.get("changes", []), payload.get("checks", []))
+            elif command_type == "dev.apply_patch":
+                await self._emit("isaac.tool.started", {"tool": "dev.apply_patch", "proposalId": payload.get("proposalId")})
+                result = self.dev.apply_patch(payload.get("proposalId", ""), payload.get("approvalToken", ""), payload.get("edits", []))
+                await self._emit("isaac.tool.completed", {"tool": "dev.apply_patch", "proposalId": payload.get("proposalId"), "ok": True})
+            elif command_type == "dev.git_diff":
+                result = self.dev.git_diff(bool(payload.get("stat", False)))
+            elif command_type == "dev.run_check":
+                await self._emit("isaac.tool.started", {"tool": "dev.run_check", "check": payload.get("check")})
+                result = self.dev.run_check(payload.get("check", ""), payload.get("args", []))
+                await self._emit("isaac.tool.completed", {"tool": "dev.run_check", "check": payload.get("check"), "exitCode": result.get("exitCode")})
+            elif command_type == "dev.rollback_last_change":
+                await self._emit("isaac.tool.started", {"tool": "dev.rollback_last_change"})
+                result = self.dev.rollback_last_change()
+                await self._emit("isaac.tool.completed", {"tool": "dev.rollback_last_change", "ok": True})
             elif command_type == "brain.status":
                 result = self.brain.status()
             elif command_type == "memory.status":

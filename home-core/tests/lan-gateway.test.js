@@ -11,6 +11,8 @@ test('LAN gateway authenticates, streams only conversation events, and closes', 
   const client = {
     async command(type, payload) {
       if (type === 'conversation.create') return { conversationId };
+      if (type === 'conversation.bootstrap' || type === 'conversation.select') return { conversationId, title: 'Phone Chat', messages: [{ role: 'user', content: 'Restored' }] };
+      if (type === 'conversation.list') return { conversations: [{ conversationId, title: 'Phone Chat' }] };
       if (type === 'conversation.message') {
         setTimeout(() => {
           events.emit('event', { version: '1.0', type: 'isaac.response.started', conversationId, payload: { requestId: 'request-1' } });
@@ -39,6 +41,11 @@ test('LAN gateway authenticates, streams only conversation events, and closes', 
     const created = await fetch(`${info.url}/api/conversations`, { method: 'POST', headers: auth, body: '{}' });
     assert.strictEqual(created.status, 201);
     assert.strictEqual((await created.json()).conversationId, conversationId);
+
+    const listed = await fetch(`${info.url}/api/conversations`, { headers: { Authorization: `Bearer ${gateway.token}` } });
+    assert.strictEqual((await listed.json()).conversations[0].title, 'Phone Chat');
+    const resumed = await fetch(`${info.url}/api/conversations/bootstrap`, { method: 'POST', headers: auth, body: '{}' });
+    assert.strictEqual((await resumed.json()).messages[0].content, 'Restored');
 
     const stream = await fetch(`${info.url}/api/events?token=${encodeURIComponent(gateway.token)}`);
     assert.strictEqual(stream.status, 200);

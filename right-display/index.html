@@ -6,31 +6,42 @@
   <title>ISAAC</title>
   <link rel="stylesheet" href="../shared/display.css">
   <link rel="stylesheet" href="interface.css">
+  <link rel="stylesheet" href="garage.css">
 </head>
 <body data-isaac-state="idle">
-  <img class="bay-master" src="../assets/masters/right-reactor-bay-v1.png" alt="ISAAC reactor bay">
-  <div class="reactor-presence" aria-hidden="true">
-    <img src="../assets/masters/right-approved-master.png" alt="">
+  <div class="garage-scene" aria-hidden="true">
+    <img src="../assets/masters/isaac-impala-garage.png" alt="">
+    <div class="headlight h1"></div><div class="headlight h2"></div>
+    <div class="headlight h3"></div><div class="headlight h4"></div>
+    <div class="grille-light"></div><div class="screen-light"></div><div class="floor-light"></div>
   </div>
-  <canvas class="fx" aria-hidden="true"></canvas>
+  <div class="garage-shade" aria-hidden="true"></div>
+  <div class="garage-brand">ISAAC<small>HOME / LOUISIANA</small></div>
+  <div class="garage-status"><span id="state-label" class="state-label">CONNECTING</span></div>
 
   <main class="isaac-interface" aria-label="ISAAC conversation">
     <section class="conversation-shell" aria-label="Conversation history">
       <header class="conversation-heading">
-        <span class="identity">ISAAC</span>
-        <span id="state-label" class="state-label">CONNECTING</span>
+        <span class="garage-heading">In the garage</span>
+        <button id="chat-picker" class="chat-picker" type="button" aria-expanded="false"><span id="chat-title">New Chat</span> ▾</button>
+        <button id="new-chat" class="chat-action" type="button">＋</button>
       </header>
+      <div id="chat-drawer" class="chat-drawer" hidden><div id="chat-list"></div></div>
       <div id="conversation" class="conversation" role="log" aria-live="polite" aria-relevant="additions text"></div>
     </section>
 
     <form id="composer" class="composer" autocomplete="off">
-      <span class="prompt-mark" aria-hidden="true"></span>
       <textarea id="input" rows="1" maxlength="8000" aria-label="Message ISAAC" placeholder="Talk to ISAAC"></textarea>
+      <button id="voice-toggle" type="button" aria-label="Toggle voice" aria-pressed="true" title="Voice on">♪</button>
+      <button id="stop-response" type="button" aria-label="Stop response and voice" title="Stop">■</button>
+      <button type="submit" aria-label="Send message" title="Send">➤</button>
       <span id="input-status" class="input-status">ENTER TO SEND</span>
     </form>
+    <button id="motion-toggle" class="motion-toggle" type="button" aria-pressed="true">Motion on</button>
+    <div class="garage-voice" aria-hidden="true"><div id="voice-wave"></div><span id="presence-label">AT HOME</span></div>
   </main>
 
-  <script src="../effects/right/motion.js"></script>
+  <script src="../effects/right/garage.js"></script>
   <script src="interface.js"></script>
 </body>
 </html>

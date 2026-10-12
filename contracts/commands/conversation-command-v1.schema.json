@@ -8,7 +8,9 @@
     "type": {
       "enum": [
         "conversation.create", "conversation.message", "conversation.cancel", "brain.status",
-        "memory.status", "memory.list", "memory.search", "memory.get", "memory.create", "memory.update", "memory.delete"
+        "memory.status", "memory.list", "memory.search", "memory.get", "memory.create", "memory.update", "memory.delete",
+        "dev.list_files", "dev.read_file", "dev.search_code", "dev.propose_change",
+        "dev.apply_patch", "dev.git_diff", "dev.run_check", "dev.rollback_last_change"
       ]
     },
     "requestId": { "type": "string", "format": "uuid" },

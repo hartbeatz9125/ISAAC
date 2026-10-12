@@ -66,6 +66,8 @@ class WebSecurityTests(unittest.TestCase):
     def test_intent_router_keeps_casual_chat_offline(self):
         self.assertFalse(needs_research("Yo"))
         self.assertFalse(needs_research("I'm bored"))
+        self.assertFalse(needs_research("What you up to today?"))
+        self.assertFalse(needs_research("How are you today?"))
         self.assertTrue(needs_research("Search the internet for public space news"))
         self.assertTrue(needs_research("What's the current release status?"))
 

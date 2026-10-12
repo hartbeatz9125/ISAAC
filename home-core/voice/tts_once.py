@@ -41,6 +41,15 @@ def chunks(text: str, limit: int = 420) -> list[str]:
     return result
 
 
+def amplitude_envelope(samples: np.ndarray, sample_rate: int, step_ms: int = 50) -> list[float]:
+    """Bounded RMS envelope aligned to the first audible sample, not the WAV padding."""
+    step = max(1, round(sample_rate * step_ms / 1000))
+    levels = [float(np.sqrt(np.mean(np.square(samples[i:i + step]))))
+              for i in range(0, len(samples), step)]
+    peak = max(levels, default=0.0)
+    return [round(min(1.0, value / max(peak, 0.001)), 3) for value in levels]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True)
@@ -59,6 +68,7 @@ def main() -> int:
         samples, sample_rate = kokoro.create(segment, voice=args.voice, speed=1.0, lang="en-gb")
         audio_parts.append(np.asarray(samples, dtype=np.float32))
     samples = np.concatenate(audio_parts) if audio_parts else np.zeros(1, dtype=np.float32)
+    envelope = amplitude_envelope(samples, sample_rate)
     samples = add_leading_silence(samples, sample_rate)
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -87,6 +97,8 @@ def main() -> int:
         "leadingSilenceMs": LEADING_SILENCE_MS,
         "deviceStartUnixMs": playback_clock["deviceStartUnixMs"],
         "audibleStartUnixMs": audible_started_ms,
+        "amplitudeEnvelope": envelope,
+        "envelopeStepMs": 50,
     }), flush=True)
     playback.join()
     return 0

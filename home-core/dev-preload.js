@@ -4,6 +4,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('isaacDev', {
   createConversation: () => ipcRenderer.invoke('isaac:conversation:create'),
+  bootstrapConversation: () => ipcRenderer.invoke('isaac:conversation:bootstrap'),
+  selectConversation: conversationId => ipcRenderer.invoke('isaac:conversation:select', { conversationId }),
   sendMessage: (conversationId, content) => ipcRenderer.invoke('isaac:conversation:message', { conversationId, content }),
   cancel: conversationId => ipcRenderer.invoke('isaac:conversation:cancel', { conversationId }),
   brainStatus: () => ipcRenderer.invoke('isaac:brain:status'),

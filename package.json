@@ -37,7 +37,8 @@
       "assets/masters/**/*"
     ],
     "asarUnpack": [
-      "isaac-core/**/*"
+      "isaac-core/**/*",
+      "home-core/voice/**/*"
     ],
     "win": {
       "icon": "build/icon.ico",

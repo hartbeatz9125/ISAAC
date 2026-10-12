@@ -82,10 +82,17 @@ class WebResearchService:
 
 _EXPLICIT_RESEARCH = re.compile(r"\b(?:browse|find (?:me )?(?:information|info)|look (?:it|this|that|something)?\s*up|research|search (?:online|the (?:internet|web)|for)|check (?:online|the web))\b", re.I)
 _CURRENT_INFO = re.compile(r"\b(?:breaking|current(?:ly)?|latest|live|news|price|release date|schedule|score|status|today|tonight|this (?:week|month|year)|weather)\b", re.I)
+_CASUAL_TODAY = re.compile(
+    r"^\s*(?:what(?:'s|\s+is|\s+are)?\s+)?(?:are\s+)?(?:you|u|we|i)\b.*\b(?:up\s+to|doing|feeling|thinking|talking\s+about)\b.*\b(?:today|tonight)\b|"
+    r"^\s*how\s+(?:are\s+)?(?:you|u|we)\b.*\b(?:today|tonight)\b",
+    re.I,
+)
 _PUBLIC_URL = re.compile(r"https?://[^\s<>\"]+", re.I)
 
 
 def needs_research(message: str) -> bool:
+    if _CASUAL_TODAY.search(message) and not _EXPLICIT_RESEARCH.search(message):
+        return False
     return bool(_EXPLICIT_RESEARCH.search(message) or _CURRENT_INFO.search(message) or (_PUBLIC_URL.search(message) and re.search(r"\b(?:read|open|summarize|check)\b", message, re.I)))
 
 

@@ -8,6 +8,9 @@
 .isaac-interface{position:absolute;inset:0;z-index:2;pointer-events:none}
 .conversation-shell{position:absolute;left:3.4%;top:15%;bottom:18%;width:24%;min-width:340px;max-width:480px;display:flex;flex-direction:column;padding:18px 34px 20px 18px;background:radial-gradient(ellipse at 10% 48%,rgba(0,4,8,.46),rgba(0,5,10,.22) 58%,transparent 82%);pointer-events:auto}
 .conversation-heading{display:flex;align-items:center;gap:14px;margin-bottom:22px;padding-bottom:3px;letter-spacing:.18em}
+.chat-picker,.chat-action{border:0;background:transparent;color:rgba(185,232,245,.72);font:9px/1.2 "Segoe UI",sans-serif;letter-spacing:.08em;cursor:pointer;padding:5px}.chat-picker{margin-left:auto;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.chat-action{font-size:16px}
+.chat-drawer{position:absolute;z-index:6;top:50px;left:18px;right:28px;max-height:240px;overflow:auto;padding:7px;background:rgba(1,8,12,.94);border:1px solid rgba(92,207,239,.24);box-shadow:0 12px 35px #000}.chat-entry{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:5px;align-items:center}.chat-entry button{border:0;background:transparent;color:rgba(211,242,250,.72);padding:7px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.chat-entry button:hover{color:#fff;background:rgba(75,199,235,.08)}.chat-entry .mini{font-size:10px;text-align:center}
+.chat-rename{min-width:0;border:1px solid rgba(92,207,239,.35);outline:0;background:rgba(7,20,26,.92);color:#e7faff;padding:7px;font:11px/1.2 "Segoe UI",sans-serif}
 .identity{font-size:14px;color:#9ee9ff;text-shadow:0 0 10px rgba(57,207,255,.45)}
 .state-label{font-size:10px;color:rgba(146,221,244,.62)}
 .state-label::before{content:"";display:inline-block;width:5px;height:5px;margin-right:7px;border-radius:50%;background:#55d8ff;box-shadow:0 0 8px #29cbff;vertical-align:1px}

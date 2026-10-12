@@ -148,6 +148,9 @@ class LanGateway {
       request.on('close', () => { clearInterval(heartbeat); this.streams.delete(response); });
       return;
     }
+    if (request.method === 'GET' && url.pathname === '/api/conversations') {
+      return json(response, 200, await this.client.command('conversation.list'));
+    }
     if (request.method !== 'POST' || request.headers['content-type']?.split(';')[0] !== 'application/json') {
       return json(response, 404, { error: 'Not found' });
     }
@@ -157,6 +160,16 @@ class LanGateway {
       const result = await this.client.command('conversation.create');
       this.conversations.add(result.conversationId);
       return json(response, 201, { conversationId: result.conversationId });
+    }
+    if (url.pathname === '/api/conversations/bootstrap') {
+      const result = await this.client.command('conversation.bootstrap');
+      this.conversations.add(result.conversationId);
+      return json(response, 200, result);
+    }
+    if (url.pathname === '/api/conversations/select') {
+      const result = await this.client.command('conversation.select', { conversationId: body.conversationId });
+      this.conversations.add(result.conversationId);
+      return json(response, 200, result);
     }
     if (url.pathname === '/api/messages') {
       if (!this.conversations.has(body.conversationId)) return json(response, 403, { error: 'Unknown mobile conversation' });

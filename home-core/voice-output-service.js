@@ -39,7 +39,11 @@ class VoiceOutputService extends EventEmitter {
 
   dataRoot() { return path.join(this.app.getPath('documents'), 'ISAAC Voice Lab Data'); }
   runtimePath() { return path.join(this.dataRoot(), 'venv', 'Scripts', 'python.exe'); }
-  workerPath() { return path.join(__dirname, 'voice', 'tts_once.py'); }
+  workerPath() {
+    return this.app.isPackaged
+      ? path.join(process.resourcesPath, 'app.asar.unpacked', 'home-core', 'voice', 'tts_once.py')
+      : path.join(__dirname, 'voice', 'tts_once.py');
+  }
   modelPath() { return path.join(this.dataRoot(), 'models', 'kokoro', 'kokoro-v1.0.onnx'); }
   voicesPath() { return path.join(this.dataRoot(), 'models', 'kokoro', 'voices-v1.0.bin'); }
   outputRoot() { return path.join(this.dataRoot(), 'output'); }
@@ -125,6 +129,8 @@ class VoiceOutputService extends EventEmitter {
               leadingSilenceMs: message.leadingSilenceMs,
               deviceStartUnixMs: message.deviceStartUnixMs,
               audibleStartUnixMs: message.audibleStartUnixMs,
+              amplitudeEnvelope: message.amplitudeEnvelope,
+              envelopeStepMs: message.envelopeStepMs,
             }, context);
           }
         } catch {}

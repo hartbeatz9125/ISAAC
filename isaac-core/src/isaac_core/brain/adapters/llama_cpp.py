@@ -9,7 +9,7 @@ import secrets
 import socket
 import time
 from typing import Any
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from isaac_core.brain.base import BrainAdapter, DeltaCallback
@@ -22,6 +22,36 @@ class BrainUnavailableError(RuntimeError):
 
 class GenerationCancelled(RuntimeError):
     pass
+
+
+def normalize_chat_messages(messages: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Coalesce consecutive turns for strict templates, preserving stored history."""
+    normalized: list[dict[str, str]] = []
+    for message in messages:
+        item = dict(message)
+        if normalized and item["role"] == normalized[-1]["role"]:
+            normalized[-1]["content"] += "\n\n" + item["content"]
+        else:
+            normalized.append(item)
+    return normalized
+
+
+def shorten_chat_context(messages: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Discard oldest complete prompt turns only; never modify saved transcripts."""
+    shortened = [dict(item) for item in messages]
+    start = 1 if shortened and shortened[0]["role"] == "system" else 0
+    if len(shortened) - start > 2:
+        del shortened[start:start + 2]
+        return shortened
+    # Very large source/memory blocks or one long user message can exceed context.
+    # Keep the identity prefix and the most recent part of the user request.
+    largest = max(range(len(shortened)), key=lambda i: len(shortened[i]["content"]))
+    content = shortened[largest]["content"]
+    if len(content) < 256:
+        raise BrainUnavailableError("This message cannot fit in the local model context. Please shorten it.")
+    keep = max(128, len(content) // 2)
+    shortened[largest]["content"] = content[:keep] if shortened[largest]["role"] == "system" else content[-keep:]
+    return shortened
 
 
 class _IoCounters(ctypes.Structure):
@@ -220,7 +250,7 @@ class LlamaCppAdapter(BrainAdapter):
         queue: asyncio.Queue[tuple[str, Any]] = asyncio.Queue()
         generation = {
             "model": "isaac-local",
-            "messages": messages,
+            "messages": normalize_chat_messages(messages),
             "stream": True,
             "max_tokens": self.settings.max_tokens,
             "temperature": self.settings.temperature,
@@ -237,7 +267,20 @@ class LlamaCppAdapter(BrainAdapter):
         def produce() -> None:
             response = None
             try:
-                response = self._request("/v1/chat/completions", data=body, timeout=600)
+                request_body = body
+                while True:
+                    if cancel_event.is_set():
+                        raise GenerationCancelled()
+                    try:
+                        response = self._request("/v1/chat/completions", data=request_body, timeout=600)
+                        break
+                    except HTTPError as error:
+                        details = error.read().decode("utf-8", errors="replace")
+                        error.close()
+                        if error.code != 400 or "exceeds the available context size" not in details:
+                            raise BrainUnavailableError(f"Local model rejected the request (HTTP {error.code}).") from error
+                        generation["messages"] = shorten_chat_context(generation["messages"])
+                        request_body = json.dumps(generation).encode("utf-8")
                 self._active_responses[request_id] = response
                 for raw_line in response:
                     if cancel_event.is_set():
